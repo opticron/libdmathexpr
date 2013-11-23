@@ -756,11 +756,13 @@ class MOOperation:IMathObject {
 		// flatten everything we can
 		for (int i = 0;i < operands.length;i++) {
 			auto tmp = cast(MOOperation)operands[i];
-			if (tmp) if (tmp.op == op) {
-				operands ~= tmp.operands;
-				operands[i] = null;
-			} else {
-				tmp.flatten();
+			if (tmp) {
+				if (tmp.op == op) {
+					operands ~= tmp.operands;
+					operands[i] = null;
+				} else {
+					tmp.flatten();
+				}
 			}
 		}
 		// fill in the nulls
