@@ -51,13 +51,10 @@ version(Tango) {
 } else {
 	version(D_Version2) {
 		import std.conv:to;
-		import std.string:strip,stripr=stripRight,stripl=stripLeft,split,replace,find=indexOf,cmp,icmp,atoi,join,tolower=toLower;
-		real atof(string data) {
-			return to!(real)(data);
-		}
-		string tostring(real data) {
-			return to!(string)(data);
-		}
+		import std.string:strip,stripr=stripRight,stripl=stripLeft,split,replace,find=indexOf,cmp,icmp,join,tolower=toLower;
+		alias atof = to!real;
+		alias atoi = to!int;
+		alias tostring = to!string;
 		import std.regex;
 		string regrep(string input, string pattern, string delegate(string) translator) {
 			string tmpdel(Captures!(string) m) {
