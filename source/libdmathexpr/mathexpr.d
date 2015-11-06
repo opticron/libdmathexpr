@@ -906,14 +906,14 @@ unittest {
 	tryGood("2^-x",0.125);
 	tryGood("2^----x",8);
 	tryGood("2x",6);
-	tryGood("cos(x)",cos(3));
-	tryGood("5cos(x)",5*cos(3));
+	tryGood("cos(x)",cos(3.0));
+	tryGood("5cos(x)",5*cos(3.0));
 	tryGood("3x+2",11);
 	tryGood("(46+36+52+41+27+56+30+24+30)/9",38);
 	tryGood("1(-0)",0);
 	tryGood("0/1",0);
 	logln("MathExpr: cos(3x+2)\n");
-	real t1 = parseMathExpr("cos(3x+2)").evaluate(vars),t2 = cos(11);
+	real t1 = parseMathExpr("cos(3x+2)").evaluate(vars),t2 = cos(11.0);
 	logln("got "~tostring(t1)~" == "~tostring(t2)~"\n");
 	//assert(feqrel(t1,t2));
 	setVar("y",32);
