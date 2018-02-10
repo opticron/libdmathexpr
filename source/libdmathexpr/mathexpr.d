@@ -96,7 +96,7 @@ interface IMathObject {
 const string tryEval = 
 "		try {
 			return new MONumber(evaluate(vars));
-		} catch {}";
+		} catch(Exception) {}";
 
 enum MOOpType {
 	Addition,
@@ -886,7 +886,7 @@ unittest {
 		try {
 			parseMathExpr(expr).evaluate(vars);
 			assert(0);
-		} catch {}
+		} catch(Exception) {}
 	}
 	void setVar(string var,real val) {
 		vars[var] = val;
