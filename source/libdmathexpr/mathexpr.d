@@ -75,22 +75,22 @@ version(Tango) {
 	}
 	import std.stdio;
 	import std.math;
-	void logln(string str) {writef("%s",str);}
+	void logln(string str) @safe {writef("%s",str);}
 }
 
 /// An exception thrown on math parsing errors.
 class MathParseError : Exception {
 	// Throws an exception with an error message.
-	this(string msg) {
+	this(string msg) @safe {
 		super(msg);
 	}
 }
 
 interface IMathObject {
-	void parse(ref string input);
-	string toString();
-	real evaluate(real[string]vars);
-	IMathObject simplify(real[string]vars);
+	void parse(ref string input) @safe;
+	string toString() @safe;
+	real evaluate(real[string]vars) @safe;
+	IMathObject simplify(real[string]vars) @safe;
 }
 
 const string tryEval = 
@@ -106,7 +106,7 @@ enum MOOpType {
 	Modulus,
 	Inversion
 }
-string toString(MOOpType op) {
+string toString(MOOpType op) @safe {
 	switch(op) {
 	case MOOpType.Addition: return " + ";
 	case MOOpType.Multiplication: return " * ";
@@ -117,7 +117,7 @@ string toString(MOOpType op) {
 	}
 }
 
-int getPrevElem(IMathObject[]tokens,int i) {
+int getPrevElem(IMathObject[]tokens,int i) @safe {
 	i--;
 	for (;i>=0;i--) {
 		if (tokens[i]) return i;
@@ -125,7 +125,7 @@ int getPrevElem(IMathObject[]tokens,int i) {
 	return -1;
 }
 
-int getNextElem(IMathObject[]tokens,int i) {
+int getNextElem(IMathObject[]tokens,int i) @safe {
 	i++;
 	for (;i<tokens.length;i++) {
 		if (tokens[i]) return i;
@@ -133,7 +133,7 @@ int getNextElem(IMathObject[]tokens,int i) {
 	return -1;
 }
 
-IMathObject parseMathExpr(string input) {
+IMathObject parseMathExpr(string input) @safe {
 	// split the string into IMathObject tokens
 	IMathObject[]tokens = splitMathExpr(input);
 	// go through the process of turning this thing into a tree instead of a flat list
@@ -234,7 +234,7 @@ IMathObject parseMathExpr(string input) {
 		}
 	}
 	// helper function
-	void parseHelper(bool delegate(MOOpType) valid) {
+	void parseHelper(bool delegate(MOOpType) @safe valid) @safe {
 		for (int i = 0;i < tokens.length;i++) {
 			auto caster = cast(MOOperation)tokens[i];
 			if (caster && valid(caster.op)) {
@@ -298,7 +298,7 @@ enum {
 	IDENTIFIER,
 }
 
-int getCharType(char i) {
+int getCharType(char i) @safe {
 	if (i >= '0' && i <= '9') return NUMBER;
 	if (i >= 'a' && i <= 'z' || i >= 'A' && i <= 'Z') return IDENTIFIER;
 	switch (i) {
@@ -322,10 +322,10 @@ int getCharType(char i) {
 	}
 }
 
-IMathObject[]splitMathExpr(string input) {
+IMathObject[] splitMathExpr(string input) @safe {
 	// respect parens and pass them back into parseMathExpr for further parsing
 	IMathObject[]tmp;
-	void doAutoMul() {
+	void doAutoMul() @safe {
 		if (tmp.length && (cast(MONumber)tmp[$-1] || cast(MOParens)tmp[$-1] || cast(MOIdentifier)tmp[$-1])) {
 			tmp ~= new MOOperation("*");
 		}
@@ -380,24 +380,24 @@ IMathObject[]splitMathExpr(string input) {
 
 class MONegation:IMathObject {
 	IMathObject rhs;
-	this (ref string c) {
+	this (ref string c) @safe {
 		parse(c);
 	}
-	this(){}
+	this() @safe {}
 	/// Return the string that was used to generate this node.
-	override string toString() {
+	override string toString() @safe {
 		return "-"~rhs.toString();
 	}
 	/// Return the numeric data represented by this node.
-	real evaluate(real[string]vars) {
+	real evaluate(real[string]vars) @safe {
 		return -rhs.evaluate(vars);
 	}
 	/// This function parses a set of nodes out of an equation string.
-	void parse(ref string source) {
+	void parse(ref string source) @safe {
 		// this does nothing on purpose, it will not be used by default
 	}
 	/// Return the simplification of this node (where possible).
-	IMathObject simplify(real[string]vars) {
+	IMathObject simplify(real[string]vars) @safe {
 		mixin(tryEval);
 		// pass the simplification up the tree first
 		rhs = rhs.simplify(vars);
@@ -410,23 +410,23 @@ class MONegation:IMathObject {
 
 class MOInversion:IMathObject {
 	IMathObject rhs;
-	this (ref string c) {
+	this (ref string c) @safe {
 		parse(c);
 	}
 	/// Return the string that was used to generate this node.
-	override string toString() {
+	override string toString() @safe {
 		return "1/"~rhs.toString();
 	}
 	/// Return the numeric data represented by this node.
-	real evaluate(real[string]vars) {
+	real evaluate(real[string]vars) @safe {
 		return 1/rhs.evaluate(vars);
 	}
 	/// This function parses a set of nodes out of an equation string.
-	void parse(ref string source) {
+	void parse(ref string source) @safe {
 		// this does nothing on purpose, it will not be used by default
 	}
 	/// Return the simplification of this node (where possible).
-	IMathObject simplify(real[string]vars) {
+	IMathObject simplify(real[string]vars) @safe {
 		mixin(tryEval);
 		// it only makes sense to pass the simplification up the tree here since negation is so simple
 		rhs = rhs.simplify(vars);
@@ -443,15 +443,15 @@ static this () {
 class MOIdentifier:IMathObject {
 	string identifier;
 	IMathObject[]args;
-	this (ref string c) {
+	this (ref string c) @safe {
 		parse(c);
 	}
-	this (string id,IMathObject[]inargs) {
+	this (string id,IMathObject[]inargs) @safe {
 		identifier = id;
 		args = inargs;
 	}
 	/// Return the string that was used to generate this node.
-	override string toString() {
+	override string toString() @safe {
 		auto ret = identifier;
 		if (args.length) {
 			ret ~= "(";
@@ -460,11 +460,11 @@ class MOIdentifier:IMathObject {
 		}
 		return ret;
 	}
-	bool isBuiltin(string fun) {
+	bool isBuiltin(string fun) @safe {
 		return (fun in builtins) != null;
 	}
 	/// Return the numeric data represented by this node.
-	real evaluate(real[string]vars) {
+	real evaluate(real[string]vars) @safe {
 		// ensure we have the right number of args if it's a function
 		if (isBuiltin(identifier) && args.length != builtins[identifier]) {
 			throw new MathParseError("Wrong number of arguments for "~identifier);
@@ -530,7 +530,7 @@ class MOIdentifier:IMathObject {
 		}
 	}
 	/// This function parses a set of nodes out of an equation string.
-	void parse(ref string source) {
+	void parse(ref string source) @safe {
 		string getIden(ref string src) {
 			foreach(i,c;src) if (!(c >= 'a' && c <= 'z') && !(c >= 'A' && c <= 'Z')) {
 				auto tmp = src[0..i];
@@ -580,7 +580,7 @@ class MOIdentifier:IMathObject {
 		throw new MathParseError("Unexpected end of input: "~source);
 	}
 	/// Return the simplification of this node (where possible).
-	IMathObject simplify(real[string]vars) {
+	IMathObject simplify(real[string]vars) @safe {
 		mixin(tryEval);
 		if (isBuiltin(identifier)) {
 			// a function!
@@ -614,17 +614,17 @@ class MOOperation:IMathObject {
 	IMathObject[]operands;
 	MOOpType op;
 	/// Constructor that takes pre-parsed objects and an op
-	this (MOOpType inop, IMathObject[]ops) {
+	this (MOOpType inop, IMathObject[]ops) @safe {
 		op = inop;
 		operands = ops;
 	}
 	/// Empty constructor
-	this () {}
+	this () @safe {}
 	/// Constructor taking an operation
-	this (string c) {
+	this (string c) @safe {
 		parse(c);
 	}
-	private bool validate() {
+	private bool validate() @safe {
 		switch(op) {
 		case MOOpType.Addition:
 			if (operands.length < 2) throw new MathParseError("Addition requires 2 or more operands");
@@ -640,7 +640,7 @@ class MOOperation:IMathObject {
 		return true;
 	}
 	/// Return the string that was used to generate this node.
-	override string toString() {
+	override string toString() @safe {
 		string[]ret;
 		validate();
 		foreach (oper;operands) {
@@ -648,15 +648,15 @@ class MOOperation:IMathObject {
 		}
 		return ret.join(.toString(op));
 	}
-	real doAdd(real accum,real add) {
+	real doAdd(real accum,real add) @safe {
 		return accum+add;
 	}
-	real doMul(real accum,real mul) {
+	real doMul(real accum,real mul) @safe {
 		return accum*mul;
 	}
 	/// Return the numeric data represented by this node.
-	real evaluate(real[string]vars) {
-		real delegate(real n1,real n2) doOp;
+	real evaluate(real[string]vars) @safe {
+		real delegate(real n1,real n2) @safe doOp;
 		validate();
 		real accum;
 		switch(op) {
@@ -695,7 +695,7 @@ class MOOperation:IMathObject {
 			myop = myop.simplify(vars);
 		}
 		// combine numerics
-		real delegate(real n1,real n2) doOp;
+		real delegate(real n1,real n2) @safe doOp;
 		validate();
 		real accum,orig;
 		switch(op) {
@@ -749,7 +749,7 @@ class MOOperation:IMathObject {
 		if (operands.length == 1) return operands[0];
 		return this;
 	}
-	void flatten() {
+	void flatten() @safe {
 		// flatten everything we can
 		for (int i = 0;i < operands.length;i++) {
 			auto tmp = cast(MOOperation)operands[i];
@@ -776,23 +776,23 @@ class MOOperation:IMathObject {
 class MOParens:IMathObject {
 	IMathObject holder;
 	/// Constructor that takes a pre-parsed object
-	this(IMathObject obj) {
+	this(IMathObject obj) @safe {
 		holder = obj;
 	}
 	/// Constructor that eats an input string
-	this(ref string input) {
+	this(ref string input) @safe {
 		parse(input);
 	}
 	/// Return the string that was used to generate this node.
-	override string toString() {
+	override string toString() @safe {
 		return "("~holder.toString()~")";
 	}
 	/// Return the numeric data represented by this node.
-	real evaluate(real[string]vars) {
+	real evaluate(real[string]vars) @safe {
 		return holder.evaluate(vars);
 	}
 	/// This function parses a set of nodes out of an equation string.
-	void parse(ref string input) {
+	void parse(ref string input) @safe {
 		// find the end of the paren that opens here
 		if (!input.length || input[0] != '(') {
 			throw new MathParseError("Couldn't instantiate parens");
@@ -814,7 +814,7 @@ class MOParens:IMathObject {
 		throw new MathParseError("Unexpected end of input: "~input);
 	}
 	/// Return the simplification of this node (where possible).
-	IMathObject simplify(real[string]vars) {
+	IMathObject simplify(real[string]vars) @safe {
 		mixin(tryEval);
 		// it only makes sense to pass the simplification up the tree here, parens perform no real ops
 		holder = holder.simplify(vars);
@@ -825,23 +825,23 @@ class MOParens:IMathObject {
 class MONumber:IMathObject {
 	real _data;
 	/// Empty constructor
-	this () {}
+	this () @safe {}
 	/// Real constructor
-	this (real indata) {_data = indata;}
+	this (real indata) @safe {_data = indata;}
 	/// Constructor that eats an input string
-	this (ref string input) {
+	this (ref string input) @safe {
 		parse(input);
 	}
 	/// Return the string that was used to generate this node.
-	override string toString() {
+	override string toString() @safe {
 		return tostring(_data);
 	}
 	/// Return the numeric data represented by this node.
-	real evaluate(real[string]vars) {
+	real evaluate(real[string]vars) @safe {
 		return _data;
 	}
 	/// This function parses a number out of a string and eats characters as it goes, hence the ref string parameter.
-	void parse(ref string source) {
+	void parse(ref string source) @safe {
 		// this parser sucks...
 		int i = 0;
 		// sift through whole numerics
@@ -865,7 +865,7 @@ class MONumber:IMathObject {
 		source = stripl(source[i..$]);
 	}
 	/// Return the simplification of this node (where possible).
-	IMathObject simplify(real[string]vars) {
+	IMathObject simplify(real[string]vars) @safe {
 		// this is already as simpified as it gets
 		return this;
 	}
@@ -875,20 +875,20 @@ version(MATHEXPR_main) {
 void main() {}
 }
 
-unittest {
+@safe unittest {
 	real[string]vars;
-	void tryGood(string expr,real expected) {
+	void tryGood(string expr,real expected) @safe {
 		logln("MathExpr: "~expr~" == "~tostring(expected)~"\n");
 		assert(parseMathExpr(expr).evaluate(vars) == expected);
 	}
-	void tryBad(string expr) {
+	void tryBad(string expr) @safe {
 		logln("MathExpr: "~expr~" (intentional bad expression)\n");
 		try {
 			parseMathExpr(expr).evaluate(vars);
 			assert(0);
 		} catch(Exception) {}
 	}
-	void setVar(string var,real val) {
+	void setVar(string var,real val) @safe {
 		vars[var] = val;
 		logln("Set "~var~" to "~tostring(val)~"\n");
 	}
