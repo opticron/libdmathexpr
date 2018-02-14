@@ -1,7 +1,7 @@
 {
 	"name": "libdmathexpr",
-	"description": "A D1/D2/Tango/Phobos/Phobos2 compatible multivariate equation parser and evaluator",
-	"copyright": "Copyright 2013, Kinsey Moore",
+	"description": "A D2 multivariate equation parser and evaluator",
+	"copyright": "Copyright 2017, Kinsey Moore",
 	"license": "BSL-1.0",
 	"authors": [
 		"Kinsey Moore"
