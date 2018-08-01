@@ -48,6 +48,9 @@ version(Tango) {
 		auto rgxp = Regex(pattern,"g");
 		return rgxp.replaceAll(input,&tmpdel);
 	}
+	bool approxEqual(real a,real b) {
+		return a == b;
+	}
 } else {
 	version(D_Version2) {
 		import std.conv:to;
@@ -879,7 +882,7 @@ void main() {}
 	real[string]vars;
 	void tryGood(string expr,real expected) @safe {
 		logln("MathExpr: "~expr~" == "~tostring(expected)~"\n");
-		assert(parseMathExpr(expr).evaluate(vars) == expected);
+		assert(approxEqual(parseMathExpr(expr).evaluate(vars), expected));
 	}
 	void tryBad(string expr) @safe {
 		logln("MathExpr: "~expr~" (intentional bad expression)\n");
