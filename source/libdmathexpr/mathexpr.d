@@ -30,56 +30,12 @@ module libdmathexpr.mathexpr;
  DEALINGS IN THE SOFTWARE.
 
  */
+import std.conv: to;
+import std.math;
+import std.mathspecial: gamma;
+import std.regex;
+import std.string: cmp, icmp, join, replace, split, strip, stripLeft, toLower;
 
-version(Tango) {
-	import tango.text.Util:stripl=triml,strip=trim,stripr=trimr,find=locatePattern,split,replace=substitute,join;
-	import tango.text.convert.Integer:tostring=toString,atoi=toInt;
-	import tango.text.convert.Float:tostring=toString,atof=toFloat;
-	import tango.text.Ascii:icmp=icompare,cmp=compare,tolower=toLower;
-	import tango.io.Stdout:logln=Stdout;
-	import tango.text.Regex;
-	import tango.math.Math;
-	import tango.math.GammaFunction:tgamma=gamma;
-	alias char[] string;
-	string regrep(string input,string pattern,string delegate(string) translator) {
-		string tmpdel(RegExpT!(char) m) {
-			return translator(m.match(0));
-		}
-		auto rgxp = Regex(pattern,"g");
-		return rgxp.replaceAll(input,&tmpdel);
-	}
-	bool approxEqual(real a,real b) {
-		return a == b;
-	}
-} else {
-	version(D_Version2) {
-		import std.conv:to;
-		import std.string:strip,stripr=stripRight,stripl=stripLeft,split,replace,find=indexOf,cmp,icmp,join,tolower=toLower;
-		alias atof = to!real;
-		alias atoi = to!int;
-		alias tostring = to!string;
-		import std.regex;
-		string regrep(string input, string pattern, string delegate(string) translator) {
-			string tmpdel(Captures!(string) m) {
-				return translator(m.hit);
-			}
-			return std.regex.replace!(tmpdel)(input, regex(pattern, "g"));
-		}
-		import std.mathspecial:tgamma=gamma;
-	} else {
-		import std.string:tostring=toString,strip,stripr,stripl,split,replace,find,cmp,icmp,atoi,atof,tolower,join;
-		import std.regexp:sub,RegExp;
-		string regrep(string input,string pattern,string delegate(string) translator) {
-			string tmpdel(RegExp m) {
-				return translator(m.match(0));
-			}
-			return std.regexp.sub(input,pattern,&tmpdel,"g");
-		}
-	}
-	import std.stdio;
-	import std.math;
-	void logln(string str) @safe {writef("%s",str);}
-}
 
 /// An exception thrown on math parsing errors.
 class MathParseError : Exception {
@@ -288,7 +244,7 @@ IMathObject parseMathExpr(string input) @safe {
 	uint first;
 	foreach(uint i,c;tokens) if (c) {count++;first=i;}
 	if (count != 1) {
-		throw new MathParseError("FUUUUUUUUUUU count="~tostring(count));
+		throw new MathParseError("FUUUUUUUUUUU count="~count.to!string);
 	}
 	return tokens[first];
 }
@@ -510,7 +466,7 @@ class MOIdentifier:IMathObject {
 		case "exp":
 			return exp(args[0].evaluate(vars));
 		case "gamma":
-			return tgamma(args[0].evaluate(vars));
+			return gamma(args[0].evaluate(vars));
 		case "int":
 			auto tmp = args[0].evaluate(vars);
 			return tmp-(tmp%1);
@@ -545,9 +501,9 @@ class MOIdentifier:IMathObject {
 			return tmp;
 		}
 		// if the identifier is our variable, don't look for parens or args
-		identifier = tolower(getIden(source));
+		identifier = toLower(getIden(source));
 		// strip out whitespace
-		source = stripl(source);
+		source = stripLeft(source);
 		// parse out parameters if necessary
 		if (!source.length || source[0] != '(') {
 			if (isBuiltin(identifier)) {
@@ -837,7 +793,7 @@ class MONumber:IMathObject {
 	}
 	/// Return the string that was used to generate this node.
 	override string toString() @safe {
-		return tostring(_data);
+		return _data.to!string;
 	}
 	/// Return the numeric data represented by this node.
 	real evaluate(real[string]vars) @safe {
@@ -864,8 +820,8 @@ class MONumber:IMathObject {
 				while (i< source.length && source[i] >= '0' && source[i] <= '9') i++;
 			}
 		}
-		_data = atof(source[0..i]);
-		source = stripl(source[i..$]);
+		_data = source[0..i].to!real;
+		source = stripLeft(source[i..$]);
 	}
 	/// Return the simplification of this node (where possible).
 	IMathObject simplify(real[string]vars) @safe {
@@ -879,13 +835,14 @@ void main() {}
 }
 
 @safe unittest {
+	import std.stdio : writeln;
 	real[string]vars;
 	void tryGood(string expr,real expected) @safe {
-		logln("MathExpr: "~expr~" == "~tostring(expected)~"\n");
+		writeln("MathExpr: "~expr~" == "~expected.to!string);
 		assert(approxEqual(parseMathExpr(expr).evaluate(vars), expected));
 	}
 	void tryBad(string expr) @safe {
-		logln("MathExpr: "~expr~" (intentional bad expression)\n");
+		writeln("MathExpr: "~expr~" (intentional bad expression)");
 		try {
 			parseMathExpr(expr).evaluate(vars);
 			assert(0);
@@ -893,7 +850,7 @@ void main() {}
 	}
 	void setVar(string var,real val) @safe {
 		vars[var] = val;
-		logln("Set "~var~" to "~tostring(val)~"\n");
+		writeln("Set "~var~" to "~val.to!string);
 	}
 	setVar("x",3);
 	tryGood("x+x",6);
@@ -915,9 +872,9 @@ void main() {}
 	tryGood("(46+36+52+41+27+56+30+24+30)/9",38);
 	tryGood("1(-0)",0);
 	tryGood("0/1",0);
-	logln("MathExpr: cos(3x+2)\n");
+	writeln("MathExpr: cos(3x+2)");
 	real t1 = parseMathExpr("cos(3x+2)").evaluate(vars),t2 = cos(11.0);
-	logln("got "~tostring(t1)~" == "~tostring(t2)~"\n");
+	writeln("got "~t1.to!string~" == "~t2.to!string);
 	//assert(feqrel(t1,t2));
 	setVar("y",32);
 	tryGood("x+y",vars["x"]+vars["y"]);
@@ -942,13 +899,13 @@ void main() {}
 	tryBad("3/*3");
 	tryBad("3-/3");
 	tryBad("1..4");
-	logln("MathExpr: Simplify 3+4\n");
+	writeln("MathExpr: Simplify 3+4");
 	assert(parseMathExpr("3+4").simplify(vars).toString() == "7");
-	logln("MathExpr: Simplify x+z\n");
+	writeln("MathExpr: Simplify x+z");
 	assert(parseMathExpr("x+z").simplify(vars).toString() == "z + 3");
-	logln("MathExpr: Simplify 7(x+z)\n");
+	writeln("MathExpr: Simplify 7(x+z)");
 	assert(parseMathExpr("7(x+z)").simplify(vars).toString() == "(z + 3) * 7");
-	logln("MathExpr: Simplify 7(x+z-2y)\n");
+	writeln("MathExpr: Simplify 7(x+z-2y)");
 	assert(parseMathExpr("7(x+z-2y)").simplify(vars).toString() == "(z + -61) * 7");
-	logln("Completed all unit tests\n");
+	writeln("Completed all unit tests");
 }
